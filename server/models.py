@@ -21,9 +21,15 @@ class Restaurant(db.Model, SerializerMixin):
     address = db.Column(db.String)
 
     # add relationship
-
+    restaurantpizzas = db.relationship('RestaurantPizza', back_populates='restaurant')
     # add serialization rules
-
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'address': self.address,
+            'restaurantpizzas': self.restaurantpizzas
+        }
     def __repr__(self):
         return f"<Restaurant {self.name}>"
 
@@ -36,7 +42,7 @@ class Pizza(db.Model, SerializerMixin):
     ingredients = db.Column(db.String)
 
     # add relationship
-
+    restaurantpizzas = db.relationship('RestaurantPizza',back_populates='pizza')
     # add serialization rules
 
     def __repr__(self):
@@ -49,10 +55,12 @@ class RestaurantPizza(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     price = db.Column(db.Integer, nullable=False)
 
-    pizza_id = db.Column
-
     # add relationships
+    pizza_id = db.Column(db.Integer, db.ForeignKey('pizzas.id'))
+    pizza = db.relationship('Pizza',back_populates='restaurantpizzas')
 
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'))
+    restaurant = db.relationship('Restaurant',back_populates='restaurantpizzas')
     # add serialization rules
 
     # add validation
