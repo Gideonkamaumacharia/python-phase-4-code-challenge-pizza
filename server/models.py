@@ -28,7 +28,7 @@ class Restaurant(db.Model, SerializerMixin):
             'id': self.id,
             'name': self.name,
             'address': self.address,
-            'restaurantpizzas': self.restaurantpizzas
+            'restaurantpizzas': [rp.to_dict() for rp in self.restaurantpizzas]
         }
     def __repr__(self):
         return f"<Restaurant {self.name}>"
