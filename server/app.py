@@ -5,6 +5,8 @@ from flask import Flask, request, make_response,jsonify
 from flask_restful import Api, Resource
 import os
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import create_engine
+from  sqlalchemy.orm import sessionmaker
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -14,6 +16,9 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = False
+
+engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+Session = sessionmaker(bind=engine)
 
 migrate = Migrate(app, db)
 
@@ -30,6 +35,7 @@ def index():
 def get_restaurants():
     restaurants = Restaurant.query.all()
     return jsonify([{'id': restaurant.id, 'name': restaurant.name, 'address': restaurant.address}for restaurant in restaurants]), 200
+
 #route to retrieve restaurant by id
 @app.route('/restaurants/<int:id>', methods=['GET'])
 def restaurant_by_id(id):
@@ -57,17 +63,30 @@ def restaurant_by_id(id):
         }
         restaurant_data['restaurant_pizzas'].append(pizza_data)
     return jsonify(restaurant_data)
-  #passing in the one-many write it here  
+
+   #route to delete a restaurant
 @app.route('/restaurants/<int:id>',methods=['DELETE'])
 def delete_restaurant(id):
-    restaurant = Restaurant.query.get(id)
-    if not restaurant:
-        return jsonify({'error': 'Restaurant not found'}),404
-    db.session.delete(restaurant)
-    db.session.commit()
-    return jsonify({'message': 'Restaurant deleted successfully'}), 200
+    session = Session()
+
+    try:
+        restaurant = Restaurant.query.get(id)
+        if restaurant is None:
+            return jsonify({'error': 'Restaurant not found'}),404
     
+    # Delete associated RestauurantPizzas 
+        RestaurantPizza.query.filter_by(restaurant_id=id).delete()
+
+        #Delete restaurant
+        db.session.delete(restaurant)
+        db.session.commit()
+        return jsonify({'message': 'Restaurant deleted successfully'}), 204
     
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Intergrity error occured'}),500
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
