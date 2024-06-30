@@ -87,6 +87,12 @@ def delete_restaurant(id):
         return jsonify({'error': 'Intergrity error occured'}),500
     finally:
         session.close()
+    
+@app.route('/pizzas')
+def get_pizza():
+    pizzas = Pizza.query.all()
+   
+    return jsonify([{'id': pizza.id, 'name':pizza.name, 'ingredients': pizza.ingredients} for pizza in pizzas])
 
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
