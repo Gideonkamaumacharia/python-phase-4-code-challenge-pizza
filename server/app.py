@@ -94,5 +94,41 @@ def get_pizza():
    
     return jsonify([{'id': pizza.id, 'name':pizza.name, 'ingredients': pizza.ingredients} for pizza in pizzas])
 
+@app.route('/restaurant_pizzas/',methods=['POST'])
+def create_restaurant_pizza():
+    data = request.get_json()
+
+    if not all(key in data for key in ('price', 'pizza_id', 'restaurent_id')):
+        return jsonify({'errors': ['price, pizza_id, and restaurant_id are required']}),400
+    
+    pizza = Pizza.query.get(data['pizza_id'])
+    restaurant = Restaurant.query.get(data['restaurent_id'])
+
+    if not pizza or not restaurant:
+        return jsonify({'errors': ['Pizza or Restaurent not found']}),400
+    
+    restaurant_pizza = RestaurantPizza(
+        price=data['price'],
+        pizza=pizza,
+        restaurant=restaurant
+    )
+    try:
+        db.session.add(restaurant_pizza)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'errors': [str(e)]}),400
+    
+    response_data = {
+        'id':restaurant_pizza.id,
+        'price':restaurant_pizza.price,
+        'pizza':pizza.to_dict(),
+        'pizza_id':pizza.id,
+        'restaurant':restaurant.to_dict(),
+        'restaurant_id':restaurant.id
+    }
+
+    return jsonify(response_data), 201
+
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
